@@ -17,4 +17,4 @@ This task will...
 
 <!-- The link below should link to its Epic Parent. -->
 
-[Feature: Awesome Feature Title](https://github.com/username/repository-name/issues/1)
+[Feature: Awesome Feature Title] (https://github.com/username/repository-name/issues/1)
