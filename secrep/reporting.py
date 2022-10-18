@@ -1,3 +1,4 @@
+from jinja2 import Environment, FileSystemLoader
 import pandas as pd
 
 def check_if(x, cond=None, ignore_solution=True):
@@ -61,3 +62,23 @@ def generate_summary_report(config):
         }, index=[index + 1])
         summary_reports = pd.concat([summary_reports, new_row])
     print(summary_reports)
+
+    # Write summary report as HTML and XLSX
+    write_to_file(config, summary_reports, file_type='html')
+    write_to_file(config, summary_reports, file_type='xlsx')
+    
+
+def write_to_file(config, data, file_type='html'):
+    if file_type == 'html':
+        data_dict = data.to_dict('index')
+        environment = Environment(extensions=['jinja2.ext.loopcontrols'], loader=FileSystemLoader('templates/'))
+        template = environment.get_template(config['summary_report']['template'])
+        filepath = config['summary_report']['html']
+        with open(filepath, 'w') as file:
+            file.write(template.render(rows=data_dict))
+    elif file_type == 'xlsx':
+        filepath = config['summary_report']['xlsx']
+        data.to_excel(filepath)
+    else:
+        pass
+    print(f'Data is written to {filepath}')
