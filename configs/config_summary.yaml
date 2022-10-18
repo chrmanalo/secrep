@@ -1,0 +1,10 @@
+oss_list:
+  - name: 'Redmine'
+    version: '5.0.2'
+    release_date: '2022/10/21'
+    input_file: 'data/0_raw/redmine_v5.0.2_blackduck.xlsx'
+  - name: 'Node.js'
+    version: '18.7.0'
+    release_date: '2022/10/21'
+    input_file: 'data/0_raw/node_js_dev_v18.7.0_blackduck.xlsx'
+  
