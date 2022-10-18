@@ -2,7 +2,7 @@ import argparse
 import yaml
 from yaml.loader import SafeLoader
 
-from secrep.reporting import generate_summary_report
+# from secrep.reporting import generate_summary_report
 
 def init_args():
     parser = argparse.ArgumentParser(description='Arguments being passed to the program')
@@ -16,7 +16,7 @@ def run():
         # Open the file and load the file
         with open(args.summarize) as f:
             config = yaml.load(f, Loader=SafeLoader)
-        generate_summary_report(config)
+        #generate_summary_report(config)
 
 if __name__ == '__main__':
     run()
