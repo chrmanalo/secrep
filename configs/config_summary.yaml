@@ -7,4 +7,8 @@ oss_list:
     version: '18.7.0'
     release_date: '2022/10/21'
     input_file: 'data/0_raw/node_js_dev_v18.7.0_blackduck.xlsx'
-  
+
+summary_report:
+  template: 'summary_report.html'
+  xlsx: 'data/3_reports/summary_report.xlsx'
+  html: 'data/3_reports/summary_report.html'
