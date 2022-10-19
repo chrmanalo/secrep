@@ -23,7 +23,7 @@ oss_list:
     version: '10.0.23'
     release_date: '2022/10/21'
     input_file: 'data/0_raw/tomcat_v10.0.23_blackduck.xlsx'
-  
+
 summary_report:
   template: 'summary_report.html'
   xlsx: 'data/3_reports/summary_report.xlsx'
