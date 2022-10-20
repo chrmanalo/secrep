@@ -82,3 +82,8 @@ def write_to_file(config, data, file_type='html'):
     else:
         pass
     print(f'Data is written to {filepath}')
+
+def generate_detailed_report(config):
+    print('Generating detailed report...')
+    # Write the detailed report
+    pass
