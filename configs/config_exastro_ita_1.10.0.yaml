@@ -1,0 +1,130 @@
+# Where the scraped data from NVD and the Blackduck results will be stored
+scrape:
+  xlsx: 'data/1_scraped/scrape_exastro_ita_1.10.0.xlsx'
+
+# Where the mandatory and recommended patch items and their details will be stored
+patch:
+  xlsx: 'data/2_patches/patch_exastro_ita_1.10.0.xlsx'
+
+# The security report HTML file for the wiki
+report:
+  html: 'data/3_reports/report_exastro_ita_1.10.0.html'
+  xlsx: 'data/3_reports/report_exastro_ita_1.10.0.xlsx'
+
+# The name of the OSS to be seen in the rendered HTML file
+oss_name: 'Exastro IT Automation'
+
+# The template to be used for the rendered HTML file
+template: 'detailed_report.html' 
+
+blackduck:
+  # Location of the Blackduck XLSX file
+  path: 'data/0_raw/exastro_ita_1.10.0_blackduck.xlsx'
+  # Location of the Blackduck XLSX file as a reference link for the wiki
+  url: 'http://www.ntsp.nec.co.jp/oss-tc/portal/wp-content/themes/OSS-TC/assets/ossrepo/blackduck/exastro_ita_1.10.0_blackduck.xlsx'
+
+  sheet: 'security'
+  col_name:
+    vuln_id: '脆弱性ID'
+    vuln_desc: '説明'
+    comp_name: 'コンポーネント名'
+    cvss_version: 'CVSSバージョン'
+    cvss_score: '総合スコア'
+    url: 'URL'
+    security_risk: 'セキュリティ上のリスク'
+    solution_available: 'ソリューションが利用可能'
+    workaround_available: '回避策が利用可能'
+
+issues:
+  col_name:
+    vuln_id: 'Vulnerability ID'
+    bdsa_id: 'BDSA ID'
+    cve_id: 'CVE ID'
+    vuln_desc: 'Vulnerability Description'
+    comp_name: 'Component Name'
+    cvss_url: 'URL'
+    cvss_version: 'CVSS Version'
+    cvss_score: 'CVSS Score'
+    cvss_score_color: 'CVSS Score Color'
+    severity: 'BDSA Severity'
+    ie: 'Internet Exposure'
+    ofa: 'Official Fix Available'
+    ufa: 'Unofficial Fix Available'
+    fix_policy: 'Fix Policy'
+
+patch_items:
+  col_name:
+    # summary: 'Summary'
+    impact: 'Impact of target OSS'
+    comp_name: 'Component Name'
+    latest_ver: 'Latest Version'
+    ie_desc: 'Internet Exposure Description'
+    of_desc: 'Official Fix Description'
+    uf_desc: 'Unofficial Fix Description'
+
+col_value:
+  circle: '&#9675;'
+  cross: '&#9747;'
+  dash: '&mdash;'
+  critical: 'Critical'
+  high: 'High'
+  medium: 'Medium'
+  low: 'Low'
+  ofm: 'Official Fix Mandatory'
+  ufm: 'Unofficial Fix Mandatory'
+  ofr: 'Official Fix Recommended'
+  ufr: 'Unofficial Fix Recommended'
+  ofo: 'Official Fix Optional'
+  ufo: 'Unofficial Fix Optional'
+
+# Set to True when using proxy. Otherwise, set to False
+enable_proxy: False
+
+# Set the proxies
+proxies:
+  http: ''
+  https: ''
+
+# Add your component/latest version's key-value pairs for the official fix procedure
+comp_versions:
+  'Apache Portable Runtime': '1.7.0'
+  'avahi': '0.8'
+  'Bash': '5.1'
+  'Berkeley DB': '7.5.11'
+  'brotli': '1.0.9'
+  'curl': '7.83.0'
+  'Cyrus SASL': '2.1.28'
+  'dav1d': '1.0.0'
+  'e2fsprogs': '1.46.5'
+  'Ghostscript': '9.56.1'
+  'Git': '2.37.3'
+  'GNU C Library': '2.36'
+  'GnuTLS': '3.6.16'
+  'gzip': '1.12'
+  'ImageMagick': '7.1.0-48'
+  'JBIG-KIT lossless image compression library': '2.1'
+  'krb5/krb5': '1.20'
+  'libexpat': '2.4.8'
+  'libgcrypt': '1.10.1'
+  'Libidn': '1.41'
+  'libssh2': '1.10.0'
+  'libTIFF': '4.4.0'
+  'libtirpc': '1.2.7-rc4'
+  'libwebp': '1.2.4'
+  'libXdmcp': '1.1.3'
+  'libxml2': '2.10.0'
+  'lz4': '1.9.3'
+  'MariaDB': '10.9.2'
+  'OpenLDAP': '2.6.3'
+  'OpenSSH': '9.0'
+  'PCRE': '8.45'
+  'PCRE2': '10.40'
+  'Perl': '5.36.0'
+  'PostgreSQL Database Server': '15.0'
+  'Python programming language': '3.9.5'
+  'SQLite': '3.39.3'
+  'systemd': '251'
+  'The FreeType Project': '2.12'
+  'util-linux': '2.38'
+  'zlib': '1.2.12'
+  'zstd': '1.4.0'

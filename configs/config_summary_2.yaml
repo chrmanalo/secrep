@@ -1,0 +1,14 @@
+oss_list:
+  - name: 'Node.js'
+    version: '18.7.0'
+    release_date: '2022/10/21'
+    input_file: 'data/0_raw/nodejs_18.7.0_crit_fix.xlsx'
+  - name: 'Camunda'
+    version: '7.17'
+    release_date: '2022/10/21'
+    input_file: 'data/0_raw/camunda_7.17.0_crit_fix.xlsx'
+
+summary_report:
+  template: 'summary_report.html'
+  xlsx: 'data/3_reports/summary_report_2.xlsx'
+  html: 'data/3_reports/summary_report_2.html'
