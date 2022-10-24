@@ -14,17 +14,17 @@ def check_if(x, cond=None, ignore_solution=True):
     check_solution = False
     if not ignore_solution:
         check_solution = x['ソリューションが利用可能'] == True
-    if cond == 'Critical':
-        return True if x['CVSSバージョン'] == 'CVSS 3.x' and 9.0 <= x['総合スコア'] <= 10.0 and (ignore_solution or check_solution) else False
-    elif cond == 'High':
-        return True if ((x['CVSSバージョン'] == 'CVSS 2.0' and 7.0 <= x['総合スコア'] <= 10.0) or (x['CVSSバージョン'] == 'CVSS 3.x' and 7.0 <= x['総合スコア'] <= 8.9)) and (ignore_solution or check_solution) else False
-    elif cond == 'Med':
-        return True if 4.0 <= x['総合スコア'] <= 6.9 and (ignore_solution or check_solution) else False
-    elif cond == 'Low':
-        return True if ((x['CVSSバージョン'] == 'CVSS 2.0' and 0.0 <= x['総合スコア'] <= 3.9) or (x['CVSSバージョン'] == 'CVSS 3.x' and 0.1 <= x['総合スコア'] <= 3.9)) and (ignore_solution or check_solution) else False
-    else:
-        pass
-    return True if (ignore_solution or check_solution) else False
+
+    if cond is not None:
+        cond_map = {
+            'Critical': 'CRITICAL',
+            'High': 'HIGH',
+            'Med': 'MEDIUM',
+            'Low': 'LOW'
+        }
+        return True if x['セキュリティ上のリスク'] == cond_map[cond] and (ignore_solution or check_solution) else False
+
+    return True if ignore_solution or check_solution else False
 
 def count_items(df, cond=None):
     items = df.apply(lambda x: check_if(x, cond), axis=1)
@@ -56,7 +56,8 @@ def generate_summary_report(config):
                 '脆弱性ID', # Vulnerability ID
                 '総合スコア', # Overall Score
                 'ソリューションが利用可能', # Solution Available  
-                'CVSSバージョン' # CVSS Version
+                'CVSSバージョン', # CVSS Version,
+                'セキュリティ上のリスク' # BDSA Severity
             ]
         ).drop_duplicates('脆弱性ID')
 
