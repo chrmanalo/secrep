@@ -270,3 +270,25 @@ def merge_fix_cols(df1,df2,uniqueID):
         else:
             pass
     return df_merged
+
+def generate_uniques(config):
+    print('Generating uniques...')
+    blackduck_df = pd.read_excel(config['blackduck']['path'], sheet_name='security',
+            usecols=[
+                '脆弱性ID', # Vulnerability ID
+                'ソリューションが利用可能', # Solution Available  
+                'コンポーネント取得元ID', # Component Acquisition Origin ID
+            ]
+    )
+    duplicated = blackduck_df.duplicated(subset='脆弱性ID', keep=False)
+    print(duplicated)
+    duplicated_items = blackduck_df[duplicated == True]
+    print(duplicated_items)
+
+    vulns = duplicated_items.groupby('脆弱性ID')['ソリューションが利用可能']
+    
+    fix_available_values = pd.DataFrame({'count':[]})
+    fix_available_values['count'] = vulns.value_counts()
+    print(fix_available_values)
+    write_to_file(config.unique.xlsx, fix_available_values, file_type='xlsx')
+    

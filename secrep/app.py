@@ -5,7 +5,7 @@ from yaml.loader import SafeLoader
 
 from secrep.scraping import scrape
 from secrep.processing import patch
-from secrep.reporting import generate_summary_report, generate_detailed_report
+from secrep.reporting import generate_summary_report, generate_detailed_report, generate_uniques
 
 def init_args():
     parser = argparse.ArgumentParser(description='Arguments being passed to the program')
@@ -13,6 +13,7 @@ def init_args():
     parser.add_argument('--scrape', '-s', action='store_true', required=False, help='Start web scraping')
     parser.add_argument('--patch', '-p', action='store_true', required=False, help='Generate mandatory and recommended patch details')
     parser.add_argument('--report', '-r', action='store_true', required=False, help='Generate the detailed report')
+    parser.add_argument('--unique', '-u', action='store_true', required=False, help='Check if vulnerabilities are unique')
     parser.add_argument('--config', '-f', type=str, required=True, help='Config file')
     return parser.parse_args()
 
@@ -30,6 +31,10 @@ def run():
     
     if args.summarize:
         generate_summary_report(config)
+        return
+
+    if args.unique:
+        generate_uniques(config)
         return
 
     if not (args.scrape or args.patch or args.report):
