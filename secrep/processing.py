@@ -47,21 +47,28 @@ def patch(config):
     # pi[config.patch_items.col_name.summary] = si[config.issues.col_name.vuln_desc]
 
     # Component Name
-    pi[config.patch_items.col_name.comp_name] = si[config.issues.col_name.comp_name]
+    pi[config.issues.col_name.comp_name] = si[config.issues.col_name.comp_name]
+
+    # Component's Affected Version
+    pi[config.issues.col_name.comp_version] = si[config.issues.col_name.comp_version]
 
     pi = pi.sort_values(by=config.issues.col_name.cvss_score, ascending=False)
     pi.index = np.arange(1, len(pi) + 1)
 
     # Component's Latest Version
     for key in config.comp_versions.keys():
-        pi.loc[pi[config.patch_items.col_name.comp_name] == key, config.patch_items.col_name.latest_ver] = config.comp_versions[key]
+        pi.loc[pi[config.issues.col_name.comp_name] == key, config.patch_items.col_name.latest_version] = config.comp_versions[key]
     
     # Internet Exposure Description
     pi.loc[pi[config.issues.col_name.ie] == config.col_value.circle, config.patch_items.col_name.ie_desc] = 'According to NVD, its Attack Vector is Network (AV:N).'
     pi.loc[pi[config.issues.col_name.ie] != config.col_value.circle, config.patch_items.col_name.ie_desc] = DASH
+
+    # Impacted OSS
+    # pi[config.detailed_report.col_name.impacted_oss_text] = f'{pi[config.issues.col_name.comp_name]} {pi[config.issues.col_name.comp_version]}'
+    pi[config.detailed_report.col_name.impacted_oss_text] = pi[config.issues.col_name.comp_name] + ' ' + pi[config.issues.col_name.comp_version]
     
     # Official Fix Description
-    pi.loc[pi[config.issues.col_name.ofa] == config.col_value.circle, config.patch_items.col_name.of_desc] = 'Upgrade ' + pi[config.patch_items.col_name.comp_name] + f' to the latest version ('+ pi[config.patch_items.col_name.latest_ver] +').'
+    pi.loc[pi[config.issues.col_name.ofa] == config.col_value.circle, config.patch_items.col_name.of_desc] = 'Upgrade ' + pi[config.issues.col_name.comp_name] + f' to the latest version ('+ pi[config.patch_items.col_name.latest_version] +').'
     pi.loc[pi[config.issues.col_name.ofa] != config.col_value.circle, config.patch_items.col_name.of_desc] = DASH
     
     # Unofficial Fix Description

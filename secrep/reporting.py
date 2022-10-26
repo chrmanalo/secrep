@@ -229,7 +229,7 @@ def generate_detailed_report(config):
     pi.loc[pi[config.issues.col_name.bdsa_id] == config.col_value.dash, config.issues.col_name.bdsa_id] = DASH
     pi[config.issues.col_name.ie] = to_OX(si[config.issues.col_name.ie], reverse=True)
     # pi[config.issues.col_name.ofa] = to_OX(si[config.issues.col_name.ofa], reverse=True)
-    pi[config.patch_items.col_name.impact] = ''
+    # pi[config.patch_items.col_name.impact] = ''
 
     pi = pi[[
         config.issues.col_name.cve_id, # 'CVE ID'
@@ -240,7 +240,7 @@ def generate_detailed_report(config):
         config.issues.col_name.cvss_score, # 'CVSS Score'
         config.issues.col_name.severity, # 'BDSA Severity'
         config.patch_items.col_name.ie_desc, # 'Internet Exposure Description'
-        config.patch_items.col_name.impact, # 'Impact of target OSS'
+        config.detailed_report.col_name.impacted_oss_text, # 'Impacted OSS'
         config.patch_items.col_name.of_desc # 'Official Fix Description'
     ]]
     

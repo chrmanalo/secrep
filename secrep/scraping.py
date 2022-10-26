@@ -69,6 +69,9 @@ def scrape(config):
     # COMP NAME
     si[config.issues.col_name.comp_name] = bd[config.blackduck.col_name.comp_name].copy()
 
+    # COMP Version
+    si[config.issues.col_name.comp_version] = bd[config.blackduck.col_name.comp_version].copy()
+
     # BDSA ID
     si[config.issues.col_name.bdsa_id] = bd[config.blackduck.col_name.vuln_id].copy()
     si[config.issues.col_name.bdsa_id] = si[config.issues.col_name.bdsa_id].replace(to_replace=r'(BDSA-\d{4}-\d{4,})(\s\()(CVE-\d{4}-\d{4,})(\))', value=r'\1', regex=True)
