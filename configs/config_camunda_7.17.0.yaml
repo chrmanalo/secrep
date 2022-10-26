@@ -10,16 +10,19 @@ patch:
 report:
   html: 'data/3_reports/report_camunda_7.17.0.html'
   xlsx: 'data/3_reports/report_camunda_7.17.0.xlsx'
+  url: 'http://www.ntsp.nec.co.jp/oss-tc/portal/wp-content/themes/OSS-TC/assets/ossrepo/reports/camunda_7.17.0_report.xlsx'
 
 # The name of the OSS to be seen in the rendered HTML file
-oss_name: 'Camunda'
+oss:
+  name: 'Camunda'
+  version: '7.17.0'
 
 # The template to be used for the rendered HTML file
 template: 'detailed_report.html' 
 
 blackduck:
   # Location of the Blackduck XLSX file
-  path: 'data/0_raw/camunda_7.17.0_blackduck.xlsx'
+  path: 'data/0_raw/camunda_7.17.0.xlsx'
   # Location of the Blackduck XLSX file as a reference link for the wiki
   url: 'http://www.ntsp.nec.co.jp/oss-tc/portal/wp-content/themes/OSS-TC/assets/ossrepo/blackduck/camunda_7.17.0_blackduck.xlsx'
 
@@ -93,7 +96,7 @@ comp_versions:
   'Berkeley DB': '7.5.11'
   'brotli': '1.0.9'
   'busybox': ''
-  'Bzip2: ''
+  'Bzip2': ''
   'Common Unix Printing System (CUPS)': ''
   'curl': '7.83.0'
   'Cyrus SASL': '2.1.28'

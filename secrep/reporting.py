@@ -1,4 +1,4 @@
-from turtle import home
+from datetime import date
 from jinja2 import Environment, FileSystemLoader
 import numpy as np
 import operator as op
@@ -80,7 +80,6 @@ def generate_summary_report(config):
     content = template.render(rows=data_dict)
     write_to_file(config['summary_report']['html'], content, file_type='html')
     write_to_file(config['summary_report']['xlsx'], summary_reports, file_type='xlsx')
-    
 
 def write_to_file(filepath, data, file_type='html'):
     if file_type == 'html':
@@ -91,28 +90,6 @@ def write_to_file(filepath, data, file_type='html'):
     else:
         pass
     print(f'Data is written to {filepath}')
-
-# def generate_detailed_report(config):
-#     print('Generating detailed report...')
-
-#     # read the BlackDuck Excel file and drop duplicate vulnerability IDs
-#     blackduck_df = pd.read_excel(config['input_file'], sheet_name='security',
-#         usecols=[
-#             '脆弱性ID', # Vulnerability ID
-#             '説明', # Vulnerability Description
-#             'コンポーネント名', # Component Name
-#             'URL', # URL
-#             'CVSSバージョン', # CVSS Version
-#             '総合スコア', # Overall Score
-#             'セキュリティ上のリスク', # Security Risk
-#             'ソリューションが利用可能' # Solution Available  
-#         ]
-#     ).drop_duplicates('脆弱性ID')
-
-
-
-#     # Write the detailed report
-#     pass
 
 def style_cvss_score_color(score):
     N_SCORE_TYPES = 10
@@ -254,7 +231,55 @@ def generate_detailed_report(config):
     pi = pi.sort_values(by='Overall Score', ascending=False)
     pi.index = range(1, pi.shape[0] + 1) 
 
-    write_to_file(config.report.xlsx, pi, file_type='xlsx')
+    # write_to_file(config.report.xlsx, pi, file_type='xlsx')
+
+    # Write summary report as HTML
+    # html_table_content_df = pd.DataFrame()
+    # html_table_content_df = pi[[
+    #     config.issues.col_name.cve_id, # 'CVE ID'
+    #     config.issues.col_name.bdsa_id, # 'BDSA ID'
+    #     config.issues.col_name.cvss_url, # 'URL'
+    #     'Summary of Vulnerability', # 'Vulnerability Description'
+    #     config.issues.col_name.cvss_version, # 'CVSS Version'
+    #     'Overall Score', # 'CVSS Score'
+    #     config.issues.col_name.severity, # 'BDSA Severity'
+    #     'Internet Exposure', # 'Internet Exposure Description'
+    #     config.patch_items.col_name.impact, # 'Impact of target OSS'
+    #     'Official Fix Available' # 'Official Fix Description'
+    # ]]
+    # data_dict = html_table_content_df.to_dict('index')
+    # for index, row in data_dict.items():
+    #     print(f'{index} {row}')
+    # environment = Environment(extensions=['jinja2.ext.loopcontrols'], loader=FileSystemLoader('templates/'))
+    # template = environment.get_template(config['template'])
+    # content = template.render(rows=data_dict, config=config)
+    # write_to_file(config.report.html, content, file_type='html')
+    
+    # read the BlackDuck Excel file and drop duplicate vulnerability IDs
+    blackduck_df = pd.read_excel(config.blackduck.path, sheet_name='security',
+        usecols=[
+            '脆弱性ID', # Vulnerability ID
+            '総合スコア', # Overall Score
+            'ソリューションが利用可能', # Solution Available  
+            'CVSSバージョン', # CVSS Version,
+            'セキュリティ上のリスク' # BDSA Severity
+        ]
+    ).drop_duplicates('脆弱性ID')
+
+    detailed_report = pd.DataFrame(data={
+            'OSS Container': f"{config.oss.name} {config.oss.version}",
+            'Release': date.today().strftime('%Y/%m/%d'),
+            'Critical': count_items(blackduck_df, cond='Critical'),
+            'High': count_items(blackduck_df, cond='High'),
+            'Med': count_items(blackduck_df, cond='Med'),
+            'Low': count_items(blackduck_df, cond='Low'),
+            'Total': count_items(blackduck_df)
+        }, index=[1])
+    data_dict = detailed_report.to_dict('index')
+    environment = Environment(extensions=['jinja2.ext.loopcontrols'], loader=FileSystemLoader('templates/'))
+    template = environment.get_template(config['template'])
+    content = template.render(rows=data_dict, config=config)
+    write_to_file(config.report.html, content, file_type='html')
 
 def merge_fix_cols(df1,df2,uniqueID):
     

@@ -3,7 +3,6 @@
 <h2>OSS Vulnerabilities Summary Table</h2>
 
 <table class="indent tg" style="width: 80;"><thead><tr>
-<th class="tg-head" style="width: 5%;">#</th>
 <th class="tg-head" style="width: 20%;">OSS Container</th>
 <th class="tg-head" style="width: 13%;">Release</th>
 <th class="tg-head" style="width: 10%;">Critical</th>
@@ -13,7 +12,7 @@
 <th class="tg-head" style="width: 12%;">Total</th>
 </tr></thead>
 {% for row in rows.keys() %}
-    <tr><th class="index">{{row}}</th>
+    <!-- <tr><th class="index">{{row}}</th> -->
     {% for col in rows[row] %}<td>{{rows[row][col]}}</td>{% endfor %}</tr>
 {% endfor %}
 </table>

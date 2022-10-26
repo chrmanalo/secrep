@@ -2,65 +2,42 @@
 
 <h2>Security Issues</h2>
 <p>For the full security results for Black Duck, please refer to the following link: <a href="{{config.blackduck.url}}">{{config.oss_name}} Black Duck Scan Results</a></p>
-<p>For more information on the configuration and results of the vulnerability scan please refer to this link: <a href="http://www.ntsp.nec.co.jp/oss-tc/portal/ossreposvc/security-policy-for-vulnerabilities/" target="_blank" rel="noopener noreferrer">Security Policy for Vulnerabilities</a>.</p>
-<p>The link above also contains the Security Policy that this investigation is based on.</p>
+<p>Click the OSS name from the table below to see the detailed report.</p>
+<!-- <p>For more information on the configuration and results of the vulnerability scan please refer to this link: <a href="http://www.ntsp.nec.co.jp/oss-tc/portal/ossreposvc/security-policy-for-vulnerabilities/" target="_blank" rel="noopener noreferrer">Security Policy for Vulnerabilities</a>.</p>
+<p>The link above also contains the Security Policy that this investigation is based on.</p> -->
 <table class="indent tg" style="width: 80;"><thead><tr>
-<th class="tg-head" style="width: 5%;">#</th>
-<th class="tg-head" style="width: 15.8409%;">{{config.issues.col_name.bdsa_id}}</th>
-<th class="tg-head" style="width: 15.8409%;">{{config.issues.col_name.cve_id}}</th>
-<th class="tg-head" style="width: 7%;">{{config.issues.col_name.cvss_version}}</th>
-<th class="tg-head" style="width: 7%;">{{config.issues.col_name.cvss_score}}</th>
-<th class="tg-head" style="width: 10%;">{{config.issues.col_name.severity}}</th>
-<th class="tg-head" style="width: 10%;">{{config.issues.col_name.ie}}</th>
-<th class="tg-head" style="width: 10%;">{{config.issues.col_name.ofa}}</th>
-<th class="tg-head" style="width: 10%;">{{config.issues.col_name.ufa}}</th>
-<th class="tg-head" style="width: 18%;">{{config.issues.col_name.fix_policy}}</th>
+    <th class="tg-head" style="width: 5%;">#</th>
+    <th class="tg-head" style="width: 20%;">OSS Container</th>
+    <th class="tg-head" style="width: 13%;">Release</th>
+    <th class="tg-head" style="width: 10%;">Critical</th>
+    <th class="tg-head" style="width: 10%;">High</th>
+    <th class="tg-head" style="width: 10%;">Med</th>
+    <th class="tg-head" style="width: 10%;">Low</th>
+    <th class="tg-head" style="width: 12%;">Total</th>
 </tr></thead>
-{% for row in si_rows.keys() %}
-    <tr><th class="index">{{row}}</th>
-    {% for col in si_rows[row] %}{% if col in ['Unnamed: 0', config.issues.col_name.cvss_url, config.issues.col_name.cvss_score_color] %}{{ continue }}{% else %}
-    {{si_rows[row][col]}}{% endif %}{% endfor %}
+{% for row in rows.keys() %}
+<tr><th class="index">{{row}}</th>
+    {% for col in rows[row] %}
+        {% if col == 'OSS Container' %}
+        <td><a href="{{config.report.url}}">{{rows[row][col]}}</a></td>  
+        {% else %} 
+        <td>{{rows[row][col]}}</td>
+        {% endif %}    
+    {% endfor %}
+</tr>
 {% endfor %}
 </table>
 
-<h3>Mandatory and Recommended Patch Items</h3>
-<h4>Mandatory</h4>
-<table class="indent tg" style="width: 95%;">
-    {% for row in mpi_rows.keys() %}
-    <tr>
-        <td class="details-head cvssScore{{mpi_rows[row][config.issues.col_name.cvss_score_color]}}">
-            <div class="details-title">
-                <div>{% if mpi_rows[row][config.issues.col_name.cve_id] == config.col_value.dash %}{{mpi_rows[row][config.issues.col_name.bdsa_id]}}{%else%}{{mpi_rows[row][config.issues.col_name.cve_id]}}{%endif%} <em>({{mpi_rows[row][config.issues.col_name.cvss_version]|string()}})</em><br/><em>({{mpi_rows[row][config.issues.col_name.severity]}})</em></div>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="details-body">
-            <p><strong><em>Summary</em></strong><br />{{mpi_rows[row][config.patch_items.col_name.summary]}}</p>
-            <p><strong><em>Internet Exposure</em></strong><br />{{mpi_rows[row][config.patch_items.col_name.ie_desc]}}</p>
-            <p><strong><em>Official Fix Procedure</em></strong><br />{{mpi_rows[row][config.patch_items.col_name.of_desc]}}</p>
-            <p><strong><em>Unofficial Fix Procedure</em></strong><br />{{mpi_rows[row][config.patch_items.col_name.uf_desc]}}</p>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-<h4>Recommended</h4>
-<table class="indent tg" style="width: 95%;">
-    {% for row in rpi_rows.keys() %}
-    <tr>
-        <td class="details-head cvssScore{{rpi_rows[row][config.issues.col_name.cvss_score_color]}}">
-            <div class="details-title">
-                <div>{% if rpi_rows[row][config.issues.col_name.cve_id] == config.col_value.dash %}{{rpi_rows[row][config.issues.col_name.bdsa_id]}}{%else%}{{rpi_rows[row][config.issues.col_name.cve_id]}}{%endif%} <em>({{rpi_rows[row][config.issues.col_name.cvss_version]|string()}})</em><br/><em>({{rpi_rows[row][config.issues.col_name.severity]}})</em></div>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="details-body">
-            <p><strong><em>Summary</em></strong><br />{{rpi_rows[row][config.patch_items.col_name.summary]}}</p>
-            <p><strong><em>Internet Exposure</em></strong><br />{{rpi_rows[row][config.patch_items.col_name.ie_desc]}}</p>
-            <p><strong><em>Official Fix Procedure</em></strong><br />{{rpi_rows[row][config.patch_items.col_name.of_desc]}}</p>
-            <p><strong><em>Unofficial Fix Procedure</em></strong><br />{{rpi_rows[row][config.patch_items.col_name.uf_desc]}}</p>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
+<div class="panel panel-info">
+    <div class="panel-heading">
+        <h4 class="panel-title">Note</h4>
+    </div>
+    <div class="panel-body">
+        <p>
+            The values under the columns <em>Critical</em>, <em>High</em>, <em>Med</em>, <em>Low</em>, and <em>Total</em> have the following format: <code>number of vulnerabilities(number of vulnerabilities with an official fix)</code>.
+        </p>
+        <p>
+            For example, <code>50(25)</code> means there are 50 vulnerabilities and 25 of them have an official fix.
+        </p>
+    </div>
+</div>
