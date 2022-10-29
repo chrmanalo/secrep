@@ -1,10 +1,14 @@
-from turtle import home
+from datetime import date
 from jinja2 import Environment, FileSystemLoader
 import numpy as np
 import operator as op
 import pandas as pd
 
+from secrep.constants import HtmlCharacterConstants, BlackDuckColumnNameConstants
 from secrep.processing import to_OX
+
+const_html = HtmlCharacterConstants()
+const_blackduck_colname = BlackDuckColumnNameConstants()
 
 CIRCLE = '&#9675;'
 CROSS = '&#9747;'
@@ -53,17 +57,19 @@ def generate_summary_report(config):
         # read the BlackDuck Excel file and drop duplicate vulnerability IDs
         blackduck_df = pd.read_excel(row['input_file'], sheet_name='security',
             usecols=[
+                const_blackduck_colname.COMP_NAME,
+                const_blackduck_colname.COMP_VERSION,
                 '脆弱性ID', # Vulnerability ID
                 '総合スコア', # Overall Score
                 'ソリューションが利用可能', # Solution Available  
                 'CVSSバージョン', # CVSS Version,
                 'セキュリティ上のリスク' # BDSA Severity
             ]
-        ).drop_duplicates('脆弱性ID')
+        ).drop_duplicates(subset=['脆弱性ID', const_blackduck_colname.COMP_NAME, const_blackduck_colname.COMP_VERSION])
 
         new_row = pd.DataFrame(data={
             'OSS Container': f"{row['name']} {row['version']}",
-            'Release': row['release_date'],
+            'Release': date.today().strftime('%Y/%m/%d'),
             'Critical': count_items(blackduck_df, cond='Critical'),
             'High': count_items(blackduck_df, cond='High'),
             'Med': count_items(blackduck_df, cond='Med'),
@@ -79,7 +85,35 @@ def generate_summary_report(config):
     template = environment.get_template(config['summary_report']['template'])
     content = template.render(rows=data_dict)
     write_to_file(config['summary_report']['html'], content, file_type='html')
-    write_to_file(config['summary_report']['xlsx'], summary_reports, file_type='xlsx')
+
+    # writer = pd.ExcelWriter(config.report.xlsx)
+    writer = pd.ExcelWriter(config['summary_report']['xlsx'], engine='xlsxwriter')
+    summary_reports.to_excel(writer, sheet_name='OSS Containers', index=False, na_rep='NaN')
+
+    workbook  = writer.book
+    worksheet = writer.sheets['OSS Containers']
+
+    # Auto-adjust column width
+    for column in summary_reports:
+        col_idx = summary_reports.columns.get_loc(column)
+        if column == 'CVE ID':
+            column_width = cve_id_column_width
+            # worksheet.set_column(col_idx, col_idx, column_width, workbook.get_default_url_format())
+            # continue
+        elif column == 'Summary of Vulnerability':
+            column_width = 50
+        else:
+            column_width = max(summary_reports[column].astype(str).map(len).max(), len(column))
+        worksheet.set_column(col_idx, col_idx, column_width)
+        # worksheet.conditional_format(f'A2:A{summary_reports.shape[0]+1}', {
+        #     'type': 'text',
+        #     'criteria': 'not containing',
+        #     'value': const_html.symbol.DASH,
+        #     'format': workbook.get_default_url_format()})
+
+    workbook.close()
+
+    # write_to_file(config['summary_report']['xlsx'], summary_reports, file_type='xlsx')
     
 
 def write_to_file(filepath, data, file_type='html'):
@@ -91,28 +125,6 @@ def write_to_file(filepath, data, file_type='html'):
     else:
         pass
     print(f'Data is written to {filepath}')
-
-# def generate_detailed_report(config):
-#     print('Generating detailed report...')
-
-#     # read the BlackDuck Excel file and drop duplicate vulnerability IDs
-#     blackduck_df = pd.read_excel(config['input_file'], sheet_name='security',
-#         usecols=[
-#             '脆弱性ID', # Vulnerability ID
-#             '説明', # Vulnerability Description
-#             'コンポーネント名', # Component Name
-#             'URL', # URL
-#             'CVSSバージョン', # CVSS Version
-#             '総合スコア', # Overall Score
-#             'セキュリティ上のリスク', # Security Risk
-#             'ソリューションが利用可能' # Solution Available  
-#         ]
-#     ).drop_duplicates('脆弱性ID')
-
-
-
-#     # Write the detailed report
-#     pass
 
 def style_cvss_score_color(score):
     N_SCORE_TYPES = 10
@@ -223,23 +235,23 @@ def generate_detailed_report(config):
     #     indicator=False,
     #     validate=None
     # )
-    pi = merge_fix_cols(si, pi, config.issues.col_name.vuln_id)
+    # pi = merge_fix_cols(si, pi, config.issues.col_name.vuln_id)
 
     pi.loc[pi[config.issues.col_name.cve_id] == config.col_value.dash, config.issues.col_name.cve_id] = DASH
     pi.loc[pi[config.issues.col_name.bdsa_id] == config.col_value.dash, config.issues.col_name.bdsa_id] = DASH
-    pi[config.issues.col_name.ie] = to_OX(si[config.issues.col_name.ie], reverse=True)
+    # pi[config.issues.col_name.ie] = to_OX(si[config.issues.col_name.ie], reverse=True)
     # pi[config.issues.col_name.ofa] = to_OX(si[config.issues.col_name.ofa], reverse=True)
     # pi[config.patch_items.col_name.impact] = ''
 
     pi = pi[[
         config.issues.col_name.cve_id, # 'CVE ID'
         config.issues.col_name.bdsa_id, # 'BDSA ID'
-        config.issues.col_name.cvss_url, # 'URL'
+        # config.issues.col_name.cvss_url, # 'URL'
         config.issues.col_name.vuln_desc, # 'Vulnerability Description'
         config.issues.col_name.cvss_version, # 'CVSS Version'
         config.issues.col_name.cvss_score, # 'CVSS Score'
         config.issues.col_name.severity, # 'BDSA Severity'
-        config.patch_items.col_name.ie_desc, # 'Internet Exposure Description'
+        config.issues.col_name.ie, # 'Internet Exposure'
         config.detailed_report.col_name.impacted_oss_text, # 'Impacted OSS'
         config.patch_items.col_name.of_desc # 'Official Fix Description'
     ]]
@@ -247,14 +259,47 @@ def generate_detailed_report(config):
     pi = pi.rename(columns={
         'Vulnerability Description': 'Summary of Vulnerability',
         'CVSS Score': 'Overall Score',
-        'Internet Exposure Description': 'Internet Exposure',
+        # 'Internet Exposure Description': 'Internet Exposure',
         'Official Fix Description': 'Official Fix Available'
     })
 
     pi = pi.sort_values(by='Overall Score', ascending=False)
     pi.index = range(1, pi.shape[0] + 1) 
+    cve_id_column_width = max(pi['CVE ID'].astype(str).map(len).max(), len('CVE ID'))
+    pi['CVE ID'] = pi['CVE ID'].apply(lambda x: make_hyperlink(x))
 
-    write_to_file(config.report.xlsx, pi, file_type='xlsx')
+    # writer = pd.ExcelWriter(config.report.xlsx)
+    writer = pd.ExcelWriter(config.report.xlsx, engine='xlsxwriter')
+    pi.to_excel(writer, sheet_name='Vulnerabilities', index=False, na_rep='NaN')
+
+    workbook  = writer.book
+    worksheet = writer.sheets['Vulnerabilities']
+
+    # Auto-adjust column width
+    for column in pi:
+        col_idx = pi.columns.get_loc(column)
+        if column == 'CVE ID':
+            column_width = cve_id_column_width
+            # worksheet.set_column(col_idx, col_idx, column_width, workbook.get_default_url_format())
+            # continue
+        elif column == 'Summary of Vulnerability':
+            column_width = 50
+        else:
+            column_width = max(pi[column].astype(str).map(len).max(), len(column))
+        worksheet.set_column(col_idx, col_idx, column_width)
+        worksheet.conditional_format(f'A2:A{pi.shape[0]+1}', {
+            'type': 'text',
+            'criteria': 'not containing',
+            'value': const_html.symbol.DASH,
+            'format': workbook.get_default_url_format()})
+
+    workbook.close()
+
+    # write_to_file(config.report.xlsx, pi, file_type='xlsx')
+
+def make_hyperlink(value):
+    url = f'https://nvd.nist.gov/vuln/detail/{value}'
+    return f'=HYPERLINK("{url.format(value)}", "{value}")' if value != const_html.symbol.DASH else const_html.symbol.DASH
 
 def merge_fix_cols(df1,df2,uniqueID):
     

@@ -4,18 +4,17 @@ import pandas as pd
 import regex as re
 import requests
 
-CIRCLE = '&#9675;'
-CROSS = '&#9747;'
-DASH = '&mdash;'
-
+from secrep.constants import HtmlCharacterConstants
 from secrep.processing import to_OX
+
+const_html = HtmlCharacterConstants()
 
 def scrape_nvd(row, config):
     print('Scraping...')
     row[config.issues.col_name.cvss_version] = re.sub(r'(CVSS\s)([2,3].(?:0|x))', r'\2', row[config.issues.col_name.cvss_version])
     
-    if row[config.issues.col_name.cve_id] == config.col_value.dash:
-        row[config.issues.col_name.ie] = config.col_value.dash
+    if row[config.issues.col_name.cve_id] == const_html.symbol.DASH:
+        row[config.issues.col_name.ie] = const_html.symbol.DASH
         return row
 
     url = 'https://nvd.nist.gov/vuln/detail/' + row[config.issues.col_name.cve_id]
@@ -31,10 +30,10 @@ def scrape_nvd(row, config):
             cvss2_vector_elem = soup.find('span', attrs={'data-testid': 'vuln-cvss2-panel-vector'})
             cvss2_vector = cvss2_vector_elem.get_text()
         except AttributeError:
-            row[config.issues.col_name.ie] = config.col_value.dash
+            row[config.issues.col_name.ie] = const_html.symbol.DASH
             return row
         groups = re.search(r'(\(AV:)(.)(.*)', cvss2_vector)
-        row[config.issues.col_name.ie] = config.col_value.circle if groups.group(2) == 'N' else config.col_value.cross
+        row[config.issues.col_name.ie] = const_html.symbol.CIRCLE if groups.group(2) == 'N' else const_html.symbol.CROSS
         return row
     elif row[config.issues.col_name.cvss_version] == '3.x':
         cvss3_vector = None
@@ -44,11 +43,11 @@ def scrape_nvd(row, config):
                 cvss3_vector_elem = soup.find('span', attrs={'data-testid': 'vuln-cvss3-cna-vector'})
             cvss3_vector = cvss3_vector_elem.get_text()
         except AttributeError:
-            row[config.issues.col_name.ie] = config.col_value.dash
+            row[config.issues.col_name.ie] = const_html.symbol.DASH
             return row
         groups = re.search(r'(CVSS:)(.{3})(/AV:)(.)(.*)', cvss3_vector)
         row[config.issues.col_name.cvss_version] = groups.group(2)
-        row[config.issues.col_name.ie] = config.col_value.circle if groups.group(4) == 'N' else config.col_value.cross
+        row[config.issues.col_name.ie] = const_html.symbol.CIRCLE if groups.group(4) == 'N' else const_html.symbol.CROSS
     
     return row
 
@@ -56,7 +55,7 @@ def scrape(config):
     # Blackduck dataframe and drop duplicates
     bd = pd.read_excel(config.blackduck.path, sheet_name=config.blackduck.sheet,
         usecols=[config.blackduck.col_name[key] for key in config.blackduck.col_name]
-    ).drop_duplicates('脆弱性ID')
+    ).drop_duplicates(subset=['脆弱性ID', config.blackduck.col_name.comp_name, config.blackduck.col_name.comp_version])
     # Security Issues dataframe
     si = pd.DataFrame(columns=[config.issues.col_name[key] for key in config.issues.col_name if config.issues.col_name[key] != config.issues.col_name.cvss_score_color])
 
@@ -75,19 +74,18 @@ def scrape(config):
     # BDSA ID
     si[config.issues.col_name.bdsa_id] = bd[config.blackduck.col_name.vuln_id].copy()
     si[config.issues.col_name.bdsa_id] = si[config.issues.col_name.bdsa_id].replace(to_replace=r'(BDSA-\d{4}-\d{4,})(\s\()(CVE-\d{4}-\d{4,})(\))', value=r'\1', regex=True)
-    si[config.issues.col_name.bdsa_id] = si[config.issues.col_name.bdsa_id].str.replace(r'CVE-\d{4}-\d{4,}', config.col_value.dash, regex=True)
+    si[config.issues.col_name.bdsa_id] = si[config.issues.col_name.bdsa_id].str.replace(r'CVE-\d{4}-\d{4,}', const_html.symbol.DASH, regex=True)
     
     # CVE ID
     si[config.issues.col_name.cve_id] = bd[config.blackduck.col_name.vuln_id].copy()
     si[config.issues.col_name.cve_id] = si[config.issues.col_name.cve_id].replace(to_replace=r'(BDSA-\d{4}-\d{4,})(\s\()(CVE-\d{4}-\d{4,})(\))', value=r'\3', regex=True)
-    si[config.issues.col_name.cve_id] = si[config.issues.col_name.cve_id].str.replace(r'BDSA-\d{4}-\d{4,}', config.col_value.dash, regex=True)
+    si[config.issues.col_name.cve_id] = si[config.issues.col_name.cve_id].str.replace(r'BDSA-\d{4}-\d{4,}', const_html.symbol.DASH, regex=True)
 
     # CVSS URL
     si[config.issues.col_name.cvss_url] = bd[config.blackduck.col_name.url].copy()
 
     # CVSS Version and Internet Exposure
     si[config.issues.col_name.cvss_version] = bd[config.blackduck.col_name.cvss_version].copy()
-    # si[config.issues.col_name.internet_exposure] = config.col_value.circle
     si = si.apply(lambda row: scrape_nvd(row, config), axis=1)
 
     # CVSS Score
@@ -103,140 +101,140 @@ def scrape(config):
     # Unofficial Fix Available
     si[config.issues.col_name.ufa] = bd[config.blackduck.col_name.workaround_available].copy()
     si[config.issues.col_name.ufa] = to_OX(si[config.issues.col_name.ufa])
-    si.loc[si[config.issues.col_name.ofa] == config.col_value.circle, config.issues.col_name.ufa] = config.col_value.dash
+    si.loc[si[config.issues.col_name.ofa] == const_html.symbol.CIRCLE, config.issues.col_name.ufa] = const_html.symbol.DASH
 
     # Fix Policy
     fix_policies = [
         # Critical/High
         (
             [config.col_value.critical, config.col_value.high],
-            [config.col_value.circle],
-            config.col_value.circle,
-            config.col_value.dash,
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CIRCLE,
+            const_html.symbol.DASH,
             config.col_value.ofm
         ),
         (
             [config.col_value.critical, config.col_value.high],
-            [config.col_value.circle],
-            config.col_value.cross,
-            config.col_value.circle,
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CROSS,
+            const_html.symbol.CIRCLE,
             config.col_value.ufm
         ),
         (
             [config.col_value.critical, config.col_value.high],
-            [config.col_value.circle],
-            config.col_value.cross,
-            config.col_value.cross,
-            config.col_value.dash
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CROSS,
+            const_html.symbol.CROSS,
+            const_html.symbol.DASH
         ),
         (
             [config.col_value.critical, config.col_value.high],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.circle,
-            config.col_value.dash,
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CIRCLE,
+            const_html.symbol.DASH,
             config.col_value.ofr
         ),
         (
             [config.col_value.critical, config.col_value.high],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.cross,
-            config.col_value.circle,
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CROSS,
+            const_html.symbol.CIRCLE,
             config.col_value.ufr
         ),
         (
             [config.col_value.critical, config.col_value.high],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.cross,
-            config.col_value.cross,
-            config.col_value.dash
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CROSS,
+            const_html.symbol.CROSS,
+            const_html.symbol.DASH
         ),
 
         # Medium
         (
             [config.col_value.medium],
-            [config.col_value.circle],
-            config.col_value.circle,
-            config.col_value.dash,
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CIRCLE,
+            const_html.symbol.DASH,
             config.col_value.ofr
         ),
         (
             [config.col_value.medium],
-            [config.col_value.circle],
-            config.col_value.cross,
-            config.col_value.circle,
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CROSS,
+            const_html.symbol.CIRCLE,
             config.col_value.ufr
         ),
         (
             [config.col_value.medium],
-            [config.col_value.circle],
-            config.col_value.cross,
-            config.col_value.cross,
-            config.col_value.dash
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CROSS,
+            const_html.symbol.CROSS,
+            const_html.symbol.DASH
         ),
         (
             [config.col_value.medium],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.circle,
-            config.col_value.dash,
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CIRCLE,
+            const_html.symbol.DASH,
             config.col_value.ofo
         ),
         (
             [config.col_value.medium],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.cross,
-            config.col_value.circle,
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CROSS,
+            const_html.symbol.CIRCLE,
             config.col_value.ufo
         ),
         (
             [config.col_value.medium],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.cross,
-            config.col_value.cross,
-            config.col_value.dash
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CROSS,
+            const_html.symbol.CROSS,
+            const_html.symbol.DASH
         ),
 
         # Low
         (
             [config.col_value.low],
-            [config.col_value.circle],
-            config.col_value.circle,
-            config.col_value.dash,
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CIRCLE,
+            const_html.symbol.DASH,
             config.col_value.ofo
         ),
         (
             [config.col_value.low],
-            [config.col_value.circle],
-            config.col_value.cross,
-            config.col_value.circle,
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CROSS,
+            const_html.symbol.CIRCLE,
             config.col_value.ufo
         ),
         (
             [config.col_value.low],
-            [config.col_value.circle],
-            config.col_value.cross,
-            config.col_value.cross,
-            config.col_value.dash
+            [const_html.symbol.CIRCLE],
+            const_html.symbol.CROSS,
+            const_html.symbol.CROSS,
+            const_html.symbol.DASH
         ),
         (
             [config.col_value.low],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.circle,
-            config.col_value.dash,
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CIRCLE,
+            const_html.symbol.DASH,
             config.col_value.ofo
         ),
         (
             [config.col_value.low],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.cross,
-            config.col_value.circle,
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CROSS,
+            const_html.symbol.CIRCLE,
             config.col_value.ufo
         ),
         (
             [config.col_value.low],
-            [config.col_value.cross, config.col_value.dash],
-            config.col_value.cross,
-            config.col_value.cross,
-            config.col_value.dash
+            [const_html.symbol.CROSS, const_html.symbol.DASH],
+            const_html.symbol.CROSS,
+            const_html.symbol.CROSS,
+            const_html.symbol.DASH
         )
     ]
     for policy in fix_policies:

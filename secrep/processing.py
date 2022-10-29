@@ -1,18 +1,18 @@
 import numpy as np
 import pandas as pd
 
-CIRCLE = '&#9675;'
-CROSS = '&#9747;'
-DASH = '—'
+from secrep.constants import HtmlCharacterConstants
+
+const_html = HtmlCharacterConstants()
 
 def to_OX(col, reverse=False):
     if reverse:
-        condlist = [col == CIRCLE, col == CROSS, col == DASH]
+        condlist = [col == const_html.symbol.CIRCLE, col == const_html.symbol.CROSS, col == const_html.symbol.DASH]
         choicelist = ['TRUE', 'FALSE', '—']
         return np.select(condlist, choicelist)
 
     condlist = [col == True, col == False]
-    choicelist = [CIRCLE, CROSS]
+    choicelist = [const_html.symbol.CIRCLE, const_html.symbol.CROSS]
 
     return np.select(condlist, choicelist)
 
@@ -60,26 +60,26 @@ def patch(config):
         pi.loc[pi[config.issues.col_name.comp_name] == key, config.patch_items.col_name.latest_version] = config.comp_versions[key]
     
     # Internet Exposure Description
-    pi.loc[pi[config.issues.col_name.ie] == config.col_value.circle, config.patch_items.col_name.ie_desc] = 'According to NVD, its Attack Vector is Network (AV:N).'
-    pi.loc[pi[config.issues.col_name.ie] != config.col_value.circle, config.patch_items.col_name.ie_desc] = DASH
+    pi.loc[pi[config.issues.col_name.ie] == const_html.symbol.CIRCLE, config.patch_items.col_name.ie_desc] = 'According to NVD, its Attack Vector is Network (AV:N).'
+    pi.loc[pi[config.issues.col_name.ie] != const_html.symbol.CIRCLE, config.patch_items.col_name.ie_desc] = const_html.symbol.DASH
 
     # Impacted OSS
     # pi[config.detailed_report.col_name.impacted_oss_text] = f'{pi[config.issues.col_name.comp_name]} {pi[config.issues.col_name.comp_version]}'
     pi[config.detailed_report.col_name.impacted_oss_text] = pi[config.issues.col_name.comp_name] + ' ' + pi[config.issues.col_name.comp_version]
     
     # Official Fix Description
-    pi.loc[pi[config.issues.col_name.ofa] == config.col_value.circle, config.patch_items.col_name.of_desc] = 'Upgrade ' + pi[config.issues.col_name.comp_name] + f' to the latest version ('+ pi[config.patch_items.col_name.latest_version] +').'
-    pi.loc[pi[config.issues.col_name.ofa] != config.col_value.circle, config.patch_items.col_name.of_desc] = DASH
+    pi.loc[pi[config.issues.col_name.ofa] == const_html.symbol.CIRCLE, config.patch_items.col_name.of_desc] = 'Upgrade ' + pi[config.issues.col_name.comp_name] + f' to the latest version ('+ pi[config.patch_items.col_name.latest_version] +').'
+    pi.loc[pi[config.issues.col_name.ofa] != const_html.symbol.CIRCLE, config.patch_items.col_name.of_desc] = const_html.symbol.DASH
     
     # Unofficial Fix Description
     pi.loc[
-        (pi[config.issues.col_name.ufa] == config.col_value.circle) &
-        (pi[config.issues.col_name.ofa] != config.col_value.circle),
+        (pi[config.issues.col_name.ufa] == const_html.symbol.CIRCLE) &
+        (pi[config.issues.col_name.ofa] != const_html.symbol.CIRCLE),
         config.patch_items.col_name.uf_desc] = 'Workaround is available.'
     pi.loc[
-        (pi[config.issues.col_name.ufa] != config.col_value.circle) |
-        (pi[config.issues.col_name.ofa] == config.col_value.circle),
-        config.patch_items.col_name.uf_desc] = config.col_value.dash
+        (pi[config.issues.col_name.ufa] != const_html.symbol.CIRCLE) |
+        (pi[config.issues.col_name.ofa] == const_html.symbol.CIRCLE),
+        config.patch_items.col_name.uf_desc] = const_html.symbol.DASH
 
     # Only get rows with mandatory and recommended patch items
     # pi = query_patches(pi, config)
