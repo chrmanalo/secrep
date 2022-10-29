@@ -55,7 +55,7 @@ def scrape(config):
     # Blackduck dataframe and drop duplicates
     bd = pd.read_excel(config.blackduck.path, sheet_name=config.blackduck.sheet,
         usecols=[config.blackduck.col_name[key] for key in config.blackduck.col_name]
-    ).drop_duplicates('脆弱性ID')
+    ).drop_duplicates(subset=['脆弱性ID', config.blackduck.col_name.comp_name, config.blackduck.col_name.comp_version])
     # Security Issues dataframe
     si = pd.DataFrame(columns=[config.issues.col_name[key] for key in config.issues.col_name if config.issues.col_name[key] != config.issues.col_name.cvss_score_color])
 
