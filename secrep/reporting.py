@@ -54,7 +54,12 @@ def generate_summary_report(config):
     # create a DataFrame of summary reports
     summary_reports = pd.DataFrame()
     for index, row in oss_list_df.iterrows():
+        # row.index = range(1, row.shape[0] + 1) 
+        # row['#'] = row.index
+        # cve_id_column_width = max(row['CVE ID'].astype(str).map(len).max(), len('CVE ID'))
+
         # read the BlackDuck Excel file and drop duplicate vulnerability IDs
+        print(f'reading: {row["input_file"]}')
         blackduck_df = pd.read_excel(row['input_file'], sheet_name='security',
             usecols=[
                 const_blackduck_colname.COMP_NAME,
@@ -65,10 +70,12 @@ def generate_summary_report(config):
                 'CVSSバージョン', # CVSS Version,
                 'セキュリティ上のリスク' # BDSA Severity
             ]
-        ).drop_duplicates(subset=['脆弱性ID', const_blackduck_colname.COMP_NAME, const_blackduck_colname.COMP_VERSION])
+        ).drop_duplicates(subset=[const_blackduck_colname.VULN_ID, const_blackduck_colname.COMP_NAME, const_blackduck_colname.COMP_VERSION])
 
         new_row = pd.DataFrame(data={
-            'OSS Container': f"{row['name']} {row['version']}",
+            '#': index + 1,
+            # 'OSS Container': f"{row['name']} {row['version']}" if 'suffix' not in row else f"{row['name']} {row['version']} {row['suffix']}",
+            'OSS Container': f"{row['name']} {row['version']}" if row['suffix'] is np.nan else f"{row['name']} {row['version']} {row['suffix']}",
             'Release': date.today().strftime('%Y/%m/%d'),
             'Critical': count_items(blackduck_df, cond='Critical'),
             'High': count_items(blackduck_df, cond='High'),
@@ -88,28 +95,39 @@ def generate_summary_report(config):
 
     # writer = pd.ExcelWriter(config.report.xlsx)
     writer = pd.ExcelWriter(config['summary_report']['xlsx'], engine='xlsxwriter')
-    summary_reports.to_excel(writer, sheet_name='OSS Containers', index=False, na_rep='NaN')
+    summary_reports.to_excel(writer, sheet_name='OSS Containers', index=False, na_rep='NaN', startrow=1, startcol=1)
 
     workbook  = writer.book
     worksheet = writer.sheets['OSS Containers']
+    worksheet.hide_gridlines(option=2)
 
     # Auto-adjust column width
+    worksheet.set_column(0, 0, 2.5)
     for column in summary_reports:
         col_idx = summary_reports.columns.get_loc(column)
-        if column == 'CVE ID':
-            column_width = cve_id_column_width
-            # worksheet.set_column(col_idx, col_idx, column_width, workbook.get_default_url_format())
-            # continue
-        elif column == 'Summary of Vulnerability':
-            column_width = 50
-        else:
-            column_width = max(summary_reports[column].astype(str).map(len).max(), len(column))
-        worksheet.set_column(col_idx, col_idx, column_width)
-        # worksheet.conditional_format(f'A2:A{summary_reports.shape[0]+1}', {
-        #     'type': 'text',
-        #     'criteria': 'not containing',
-        #     'value': const_html.symbol.DASH,
-        #     'format': workbook.get_default_url_format()})
+        column_width = max(summary_reports[column].astype(str).map(len).max(), len(column))
+        worksheet.set_column(col_idx + 1, col_idx + 1, column_width)
+    border_format = workbook.add_format({'border': 1})
+    worksheet.conditional_format(f'B2:I{summary_reports.shape[0]+2}', {
+        'type': 'no_blanks',
+        'format': border_format})
+    header_format = workbook.add_format({'bg_color': '#95B3D7'})
+    worksheet.conditional_format('B2:D2', {
+        'type': 'no_blanks',
+        'format': header_format
+    })
+    worksheet.conditional_format('I2', {
+        'type': 'no_blanks',
+        'format': header_format
+    })
+    header_crit_format = workbook.add_format({'bg_color': '#ff0000'})
+    worksheet.conditional_format('E2', {'type': 'cell', 'criteria': 'equal to', 'value': '"Critical"', 'format': header_crit_format})
+    header_high_format = workbook.add_format({'bg_color': '#ff7500'})
+    worksheet.conditional_format('F2', {'type': 'cell', 'criteria': 'equal to', 'value': '"High"', 'format': header_high_format})
+    header_med_format = workbook.add_format({'bg_color': '#cdff00'})
+    worksheet.conditional_format('G2', {'type': 'cell', 'criteria': 'equal to', 'value': '"Med"', 'format': header_med_format})
+    header_low_format = workbook.add_format({'bg_color': '#6afcb5'})
+    worksheet.conditional_format('H2', {'type': 'cell', 'criteria': 'equal to', 'value': '"Low"', 'format': header_low_format})
 
     workbook.close()
 
@@ -163,6 +181,9 @@ def style_OXDash(col):
 
 def style_default(data):
     return '<td class="tg-body">' + data.astype(str) + '</td>'
+
+def wrap_hyperlink(text, link):
+    return f'<a href="{link}">{text}</a>'
 
 def generate_detailed_report(config):
     print('Generating security report...')
@@ -242,8 +263,10 @@ def generate_detailed_report(config):
     # pi[config.issues.col_name.ie] = to_OX(si[config.issues.col_name.ie], reverse=True)
     # pi[config.issues.col_name.ofa] = to_OX(si[config.issues.col_name.ofa], reverse=True)
     # pi[config.patch_items.col_name.impact] = ''
+    pi['#'] = ''
 
     pi = pi[[
+        '#', # Index
         config.issues.col_name.cve_id, # 'CVE ID'
         config.issues.col_name.bdsa_id, # 'BDSA ID'
         # config.issues.col_name.cvss_url, # 'URL'
@@ -260,24 +283,77 @@ def generate_detailed_report(config):
         'Vulnerability Description': 'Summary of Vulnerability',
         'CVSS Score': 'Overall Score',
         # 'Internet Exposure Description': 'Internet Exposure',
-        'Official Fix Description': 'Official Fix Available'
+        'Official Fix Description': 'Fix Information'
     })
 
     pi = pi.sort_values(by='Overall Score', ascending=False)
     pi.index = range(1, pi.shape[0] + 1) 
+    pi['#'] = pi.index
     cve_id_column_width = max(pi['CVE ID'].astype(str).map(len).max(), len('CVE ID'))
     pi['CVE ID'] = pi['CVE ID'].apply(lambda x: make_hyperlink(x))
 
+    # convert config file's OSS list to dict
+    # oss_list_dict = {index: file for index, file in enumerate(config['oss_list'])}
+    oss_list_dict = {0: config}
+    
+    # convert oss_list_dict to a DataFrame
+    oss_list_df = pd.DataFrame.from_dict(oss_list_dict, orient='index')
+    print(oss_list_dict)
+    print(oss_list_df)
+
+    # sort files by name
+    # oss_list_df = oss_list_df.sort_values(by=['name'], ignore_index=True)
+
+    # create a DataFrame of summary reports
+    summary_reports = pd.DataFrame()
+    for index, row in oss_list_df.iterrows():
+        print(f'row {row}')
+        # read the BlackDuck Excel file and drop duplicate vulnerability IDs
+        blackduck_df = pd.read_excel(row['blackduck']['path'], sheet_name='security',
+            usecols=[
+                const_blackduck_colname.COMP_NAME,
+                const_blackduck_colname.COMP_VERSION,
+                '脆弱性ID', # Vulnerability ID
+                '総合スコア', # Overall Score
+                'ソリューションが利用可能', # Solution Available  
+                'CVSSバージョン', # CVSS Version,
+                'セキュリティ上のリスク' # BDSA Severity
+            ]
+        ).drop_duplicates(subset=[const_blackduck_colname.VULN_ID, const_blackduck_colname.COMP_NAME, const_blackduck_colname.COMP_VERSION])
+        
+        text = f"{row['oss_name']} {row['oss_version']}"
+
+        new_row = pd.DataFrame(data={
+            'OSS Container': wrap_hyperlink(text, config.report.url),
+            'Release': date.today().strftime('%Y/%m/%d'),
+            'Critical': count_items(blackduck_df, cond='Critical'),
+            'High': count_items(blackduck_df, cond='High'),
+            'Med': count_items(blackduck_df, cond='Med'),
+            'Low': count_items(blackduck_df, cond='Low'),
+            'Total': count_items(blackduck_df)
+        }, index=[index + 1])
+        summary_reports = pd.concat([summary_reports, new_row])
+    print(summary_reports)
+
+    data_dict = summary_reports.to_dict('index')
+    environment = Environment(extensions=['jinja2.ext.loopcontrols'], loader=FileSystemLoader('templates/'))
+    template = environment.get_template(config['template'])
+    content = template.render(rows=data_dict, config=config)
+    write_to_file(config.report.html, content, file_type='html')
+
     # writer = pd.ExcelWriter(config.report.xlsx)
     writer = pd.ExcelWriter(config.report.xlsx, engine='xlsxwriter')
-    pi.to_excel(writer, sheet_name='Vulnerabilities', index=False, na_rep='NaN')
+    pi.to_excel(writer, sheet_name='Vulnerabilities', index=False, na_rep='NaN', startrow=1, startcol=1)
 
     workbook  = writer.book
     worksheet = writer.sheets['Vulnerabilities']
+    worksheet.hide_gridlines(option=2)
 
     # Auto-adjust column width
+    worksheet.set_column(0, 0, 2.5)
     for column in pi:
         col_idx = pi.columns.get_loc(column)
+        print(col_idx)
         if column == 'CVE ID':
             column_width = cve_id_column_width
             # worksheet.set_column(col_idx, col_idx, column_width, workbook.get_default_url_format())
@@ -286,12 +362,66 @@ def generate_detailed_report(config):
             column_width = 50
         else:
             column_width = max(pi[column].astype(str).map(len).max(), len(column))
-        worksheet.set_column(col_idx, col_idx, column_width)
-        worksheet.conditional_format(f'A2:A{pi.shape[0]+1}', {
-            'type': 'text',
-            'criteria': 'not containing',
-            'value': const_html.symbol.DASH,
-            'format': workbook.get_default_url_format()})
+        
+        worksheet.set_column(col_idx + 1, col_idx + 1, column_width)
+    worksheet.conditional_format(f'C3:C{pi.shape[0]+1}', {
+        'type': 'text',
+        'criteria': 'not containing',
+        'value': const_html.symbol.DASH,
+        'format': workbook.get_default_url_format()})
+    border_format = workbook.add_format({'border': 1})
+    worksheet.conditional_format(f'B2:K{pi.shape[0]+2}', {
+        'type': 'no_blanks',
+        'format': border_format})
+    header_format = workbook.add_format({'bg_color': '#95B3D7'})
+    worksheet.conditional_format('B2:K2', {
+        'type': 'no_blanks',
+        'format': header_format
+    })
+
+    # # color is based on overall score
+    # cvss_score_color_dict = {
+    #     '0': '#00c400',
+    #     '1': '#00e020',
+    #     '2': '#00f000',
+    #     '3': '#d1ff00',
+    #     '4': '#ffe000',
+    #     '5': '#ffcc00',
+    #     '6': '#ffbc10',
+    #     '7': '#ff9c20',
+    #     '8': '#ff8000',
+    #     '9': '#ff0000'
+    # }
+    # cvss_score_formats = {score_bin: workbook.add_format({'bg_color': color}) for score_bin, color in cvss_score_color_dict.items()}
+    # for score_bin, format in cvss_score_formats.items():
+    #     score_value = str(int(score_bin) + 1)
+    #     print(score_value)
+    #     worksheet.conditional_format(f'G3:G{pi.shape[0]+2}', {'type': 'cell', 'criteria': '<', 'value': score_value, 'format': format})
+    
+    # color is based on severity
+    severity_color_dict = {
+        'Critical': '#ff0000',
+        'High': '#ff7500',
+        'Medium': '#cdff00',
+        'Low': '#6afcb5'
+    }
+    severity_format_dict = {severity: workbook.add_format({'bg_color': color}) for severity, color in severity_color_dict.items()}
+    for severity, format in severity_format_dict.items():
+        worksheet.conditional_format(f'H3:H{pi.shape[0]+2}', {'type': 'cell', 'criteria': '==', 'value': f'"{severity}"', 'format': format})
+
+    # for score_bin, format in cvss_score_formats.items():
+    #     score_value = str(int(score_bin) + 1)
+    #     print(score_value)
+    #     worksheet.conditional_format(f'G3:G{pi.shape[0]+2}', {'type': 'cell', 'criteria': '==', f'"{}"': score_value, 'format': format})
+
+    # header_crit_format = workbook.add_format({'bg_color': '#ff0000'})
+    # worksheet.conditional_format('E2', {'type': 'cell', 'criteria': 'equal to', 'value': '"Critical"', 'format': header_crit_format})
+    # header_high_format = workbook.add_format({'bg_color': '#ff7500'})
+    # worksheet.conditional_format('F2', {'type': 'cell', 'criteria': 'equal to', 'value': '"High"', 'format': header_high_format})
+    # header_med_format = workbook.add_format({'bg_color': '#cdff00'})
+    # worksheet.conditional_format('G2', {'type': 'cell', 'criteria': 'equal to', 'value': '"Med"', 'format': header_med_format})
+    # header_low_format = workbook.add_format({'bg_color': '#6afcb5'})
+    # worksheet.conditional_format('H2', {'type': 'cell', 'criteria': 'equal to', 'value': '"Low"', 'format': header_low_format})
 
     workbook.close()
 
